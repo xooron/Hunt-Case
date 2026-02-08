@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Hunt Case</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --bg: #0b0d10;
@@ -15,6 +16,7 @@
             --text: #ffffff;
             --text-dim: #8e94a0;
             --gift-radius: 24px;
+            --image-radius: 20px; /* Единое закругление для всех изображений подарков */
         }
 
         * {
@@ -88,7 +90,7 @@
         }
         .reel-track { display: flex; position: absolute; left: 0; top: 0; height: 100%; align-items: center; transition: transform 4s cubic-bezier(0.1, 0, 0.1, 1); }
         .reel-slot { min-width: 90px; height: 100%; display: flex; align-items: center; justify-content: center; padding: 6px; }
-        .reel-slot .gift-img-container { width: 80px; height: 80px; border-radius: 18px; margin-bottom: 0; }
+        .reel-slot .gift-img-container { width: 80px; height: 80px; border-radius: var(--image-radius); margin-bottom: 0; }
 
         .plinko-game-container {
             flex: 1; display: flex; flex-direction: column; align-items: center;
@@ -106,11 +108,16 @@
         }
         .inv-item-pick {
             min-width: 80px; height: 80px; background: var(--surface); border: 2px solid var(--border);
-            border-radius: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+            border-radius: var(--image-radius); flex-shrink: 0; display: flex; align-items: center; justify-content: center;
             cursor: pointer; transition: 0.2s;
         }
         .inv-item-pick.selected { border-color: var(--accent); background: #1e293b; }
-        .inv-item-pick img { width: 70%; height: 70%; object-fit: contain; border-radius: 10px; }
+        .inv-item-pick img { 
+            width: 85%; 
+            height: 85%; 
+            object-fit: contain; 
+            border-radius: var(--image-radius); 
+        }
 
         .case-controls { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
         .mult-selector { 
@@ -129,10 +136,15 @@
         }
         .gift-img-container {
             width: 100%; aspect-ratio: 1/1; background: var(--surface-light);
-            border-radius: 20px; display: flex; align-items: center; justify-content: center;
+            border-radius: var(--image-radius); display: flex; align-items: center; justify-content: center;
             margin-bottom: 10px; overflow: hidden;
         }
-        .gift-img-container img { width: 85%; height: 85%; object-fit: contain; border-radius: 15px; }
+        .gift-img-container img { 
+            width: 85%; 
+            height: 85%; 
+            object-fit: contain; 
+            border-radius: var(--image-radius);
+        }
         .gift-name { font-size: 0.75rem; font-weight: 700; color: #fff; margin-bottom: 4px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         .modal-overlay {
@@ -178,10 +190,6 @@
             0% { width: 0%; }
             100% { width: 100%; }
         }
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; display: none; }
-        }
         
         /* ПРОФИЛЬ */
         .profile-header {
@@ -215,12 +223,25 @@
             justify-content: center;
             border: 3px solid var(--accent);
             overflow: hidden;
+            flex-shrink: 0;
         }
         
         .avatar-container img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+        
+        .user-info {
+            overflow: hidden;
+        }
+        
+        .user-info h3 {
+            font-weight: 900; 
+            margin-bottom: 5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         
         .settings-btn {
@@ -235,6 +256,7 @@
             cursor: pointer;
             color: var(--text);
             font-size: 1.2rem;
+            flex-shrink: 0;
         }
         
         .level-panel {
@@ -433,6 +455,65 @@
             color: #fff;
             font-size: 1.5rem;
         }
+        
+        /* Стили для выигрышных подарков в модальном окне */
+        .win-gift-container {
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 20px;
+        }
+        
+        .win-gift-image {
+            width: 100%;
+            height: 100%;
+            background: var(--surface-light);
+            border-radius: var(--image-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 2px solid var(--accent);
+        }
+        
+        .win-gift-image img {
+            width: 85%;
+            height: 85%;
+            object-fit: contain;
+            border-radius: var(--image-radius);
+        }
+        
+        .multi-win-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .multi-win-item {
+            background: var(--surface);
+            border-radius: var(--image-radius);
+            padding: 10px;
+            border: 1px solid var(--border);
+        }
+        
+        .multi-win-image {
+            width: 100%;
+            aspect-ratio: 1/1;
+            background: var(--surface-light);
+            border-radius: var(--image-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 5px;
+        }
+        
+        .multi-win-image img {
+            width: 85%;
+            height: 85%;
+            object-fit: contain;
+            border-radius: var(--image-radius);
+        }
     </style>
 </head>
 <body>
@@ -589,8 +670,8 @@
                         <div class="avatar-container" id="avatar-container">
                             <img id="user-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Default">
                         </div>
-                        <div>
-                            <h3 id="user-name" style="font-weight:900; margin-bottom:5px;">@Игрок</h3>
+                        <div class="user-info">
+                            <h3 id="user-name">@Игрок</h3>
                             <div style="font-size:0.8rem; color:var(--text-dim);">Игрок</div>
                         </div>
                     </div>
@@ -680,6 +761,83 @@
             { name: "Plush Pepe", price: 25000, img: "https://avatars.mds.yandex.net/i?id=c0046edbbc73a1bcb259d877578621284ad96d22-4752921-images-thumbs&n=13", w: 0.001 }
         ];
 
+        // =========== ТЕЛЕГРАМ WEBAPP ИНИЦИАЛИЗАЦИЯ ===========
+        let tg = null;
+        
+        function initTelegramUser() {
+            const loadingStatus = document.getElementById('loading-status');
+            
+            // Проверяем, запущено ли в Telegram WebApp
+            if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp) {
+                tg = window.Telegram.WebApp;
+                
+                try {
+                    tg.ready();
+                    tg.expand();
+                    
+                    // Получаем данные пользователя
+                    const user = tg.initDataUnsafe?.user;
+                    if (user) {
+                        // Устанавливаем имя пользователя
+                        const username = user.username ? '@' + user.username : (user.first_name || 'Игрок');
+                        document.getElementById('user-name').textContent = username;
+                        
+                        // Устанавливаем аватарку
+                        const avatarImg = document.getElementById('user-avatar');
+                        if (user.photo_url) {
+                            avatarImg.src = user.photo_url;
+                            loadingStatus.textContent = 'Аватарка загружена';
+                        } else {
+                            // Генерируем аватарку на основе ID пользователя
+                            const userId = user.id || Date.now().toString();
+                            avatarImg.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`;
+                            loadingStatus.textContent = 'Аватарка сгенерирована';
+                        }
+                        
+                        // Сохраняем данные пользователя в localStorage
+                        localStorage.setItem('telegramUser', JSON.stringify({
+                            username: username,
+                            userId: user.id,
+                            photoUrl: user.photo_url
+                        }));
+                    } else {
+                        // Если нет данных пользователя, пробуем загрузить из localStorage
+                        loadUserFromStorage();
+                        loadingStatus.textContent = 'Пользователь не найден, используется сохраненный';
+                    }
+                    
+                    loadingStatus.textContent = 'Telegram готов!';
+                } catch (error) {
+                    console.error('Ошибка инициализации Telegram:', error);
+                    loadUserFromStorage();
+                    loadingStatus.textContent = 'Ошибка Telegram, загружаем сохранения';
+                }
+            } else {
+                // Не в Telegram, используем тестовые данные
+                loadUserFromStorage();
+                loadingStatus.textContent = 'Telegram не обнаружен, тестовый режим';
+            }
+        }
+        
+        function loadUserFromStorage() {
+            const savedUser = localStorage.getItem('telegramUser');
+            if (savedUser) {
+                try {
+                    const userData = JSON.parse(savedUser);
+                    document.getElementById('user-name').textContent = userData.username || '@Игрок';
+                    
+                    if (userData.photoUrl) {
+                        document.getElementById('user-avatar').src = userData.photoUrl;
+                    } else if (userData.userId) {
+                        document.getElementById('user-avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.userId}`;
+                    }
+                } catch (e) {
+                    console.error('Ошибка загрузки пользователя:', e);
+                    document.getElementById('user-name').textContent = '@Игрок';
+                }
+            }
+        }
+
         // =========== СИСТЕМА СОХРАНЕНИЯ ===========
         function saveGameState() {
             const gameState = {
@@ -692,7 +850,6 @@
                 profileEffect: profileEffect
             };
             localStorage.setItem('huntCaseGameState', JSON.stringify(gameState));
-            console.log('Сохранено состояние игры');
         }
 
         function loadGameState() {
@@ -749,63 +906,6 @@
             } else if (profileEffect === 'border') {
                 profileHeader.style.border = '2px solid #3b82f6';
             }
-        }
-
-        // =========== ИНИЦИАЛИЗАЦИЯ TMA ===========
-        function initTelegramUser() {
-            const loadingStatus = document.getElementById('loading-status');
-            loadingStatus.textContent = 'Инициализация Telegram...';
-            
-            // Проверяем, запущено ли в Telegram
-            if (typeof window.Telegram === 'undefined' || !window.Telegram.WebApp) {
-                loadingStatus.textContent = 'Telegram не обнаружен, тестовый режим';
-                setTimeout(() => {
-                    initAppAfterTelegram();
-                }, 500);
-                return;
-            }
-            
-            const tg = window.Telegram.WebApp;
-            
-            // Инициализация Telegram WebApp
-            try {
-                tg.ready();
-                tg.expand();
-                
-                // Получаем данные пользователя
-                const user = tg.initDataUnsafe?.user;
-                if (user) {
-                    const username = user.username ? '@' + user.username : (user.first_name || 'Игрок');
-                    const firstName = user.first_name || 'Игрок';
-                    const userId = user.id || Date.now().toString();
-                    
-                    // Устанавливаем имя пользователя
-                    document.getElementById('user-name').textContent = username;
-                    
-                    // Устанавливаем аватарку
-                    const avatarImg = document.getElementById('user-avatar');
-                    if (user.photo_url) {
-                        avatarImg.src = user.photo_url;
-                        loadingStatus.textContent = 'Аватарка загружена';
-                    } else {
-                        // Используем DiceBear для генерации аватарки на основе ID пользователя
-                        avatarImg.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`;
-                        loadingStatus.textContent = 'Аватарка сгенерирована';
-                    }
-                } else {
-                    loadingStatus.textContent = 'Пользователь Telegram не найден';
-                    document.getElementById('user-name').textContent = '@Игрок';
-                }
-                
-                loadingStatus.textContent = 'Telegram готов!';
-            } catch (error) {
-                console.error('Ошибка инициализации Telegram:', error);
-                loadingStatus.textContent = 'Ошибка Telegram, тестовый режим';
-            }
-            
-            setTimeout(() => {
-                initAppAfterTelegram();
-            }, 800);
         }
 
         function initAppAfterTelegram() {
@@ -875,7 +975,15 @@
                 itemsToShow = auraItems;
             }
             
-            grid.innerHTML = itemsToShow.map(i => `<div class="gift-card"><div class="gift-img-container"><img src="${i.img}"></div><span class="gift-name">${i.name}</span><b class="ton-style">${i.price} TON</b></div>`).join('');
+            grid.innerHTML = itemsToShow.map(i => `
+                <div class="gift-card">
+                    <div class="gift-img-container">
+                        <img src="${i.img}" loading="lazy">
+                    </div>
+                    <span class="gift-name">${i.name}</span>
+                    <b class="ton-style">${i.price} TON</b>
+                </div>
+            `).join('');
         }
 
         function updateMultiplier(m, btn) {
@@ -906,7 +1014,13 @@
                 let slotsHTML = '';
                 for(let j=0; j<60; j++) { 
                     const rnd = currentItems[Math.floor(Math.random()*currentItems.length)]; 
-                    slotsHTML += `<div class="reel-slot"><div class="gift-img-container"><img src="${rnd.img}" loading="lazy"></div></div>`; 
+                    slotsHTML += `
+                        <div class="reel-slot">
+                            <div class="gift-img-container">
+                                <img src="${rnd.img}" loading="lazy">
+                            </div>
+                        </div>
+                    `; 
                 }
                 track.innerHTML = slotsHTML;
                 container.appendChild(track); 
@@ -966,8 +1080,17 @@
                 pendingWins.push(win);
                 
                 const track = document.getElementById(`reel-${i}`);
-                const targetSlotImg = track.querySelectorAll('.reel-slot')[stopIdx].querySelector('img');
+                const targetSlot = track.querySelectorAll('.reel-slot')[stopIdx];
+                const targetSlotImg = targetSlot.querySelector('img');
+                
+                // Важное изменение: сохраняем ТОЧНО ТОТ ЖЕ объект выигрыша
+                // который отображается в рулетке
                 targetSlotImg.src = win.img;
+                targetSlotImg.alt = win.name;
+                
+                // Сохраняем оригинальный объект для синхронизации
+                const winCopy = {...win};
+                pendingWins[i] = winCopy;
 
                 const wrapperWidth = track.parentElement.offsetWidth;
                 const targetPos = (stopIdx * slotWidth) - (wrapperWidth / 2) + (slotWidth / 2);
@@ -999,27 +1122,35 @@
                 sellBtn.style.display = 'block';
                 if(multiplier === 1) {
                     const win = pendingWins[0];
+                    total = win.price;
+                    
+                    // Важное изменение: используем ТОЧНО ТОТ ЖЕ объект и изображение
                     area.innerHTML = `
-                        <div class="gift-img-container" style="width:140px; height:140px; margin: 0 auto;">
-                            <img src="${win.img}" style="width:100%; height:100%; object-fit:contain;">
+                        <div class="win-gift-container">
+                            <div class="win-gift-image">
+                                <img src="${win.img}" alt="${win.name}" loading="lazy">
+                            </div>
                         </div>
                         <div style="font-weight:900; margin-top:15px; font-size:1.1rem;">${win.name}</div>
+                        <div style="color:var(--accent); font-weight:900; font-size:1rem; margin-top:5px;">${win.price} TON</div>
                     `;
-                    total = win.price;
                 } else {
-                    area.style.display = 'grid'; 
-                    area.style.gridTemplateColumns = 'repeat(3, 1fr)'; 
-                    area.style.gap = '10px';
-                    pendingWins.forEach(win => {
-                        total += win.price;
-                        area.innerHTML += `
-                            <div class="gift-card" style="padding:5px; border:none; background:none;">
-                                <div class="gift-img-container" style="margin-bottom:0;">
-                                    <img src="${win.img}">
+                    total = pendingWins.reduce((sum, win) => sum + win.price, 0);
+                    
+                    // Для множественных выигрышей
+                    area.innerHTML = `
+                        <div class="multi-win-grid">
+                            ${pendingWins.map(win => `
+                                <div class="multi-win-item">
+                                    <div class="multi-win-image">
+                                        <img src="${win.img}" alt="${win.name}" loading="lazy">
+                                    </div>
+                                    <div style="font-size:0.7rem; font-weight:700; margin-top:3px;">${win.price} TON</div>
                                 </div>
-                            </div>
-                        `;
-                    });
+                            `).join('')}
+                        </div>
+                        <div style="font-weight:900; margin-top:10px; font-size:0.9rem;">Выиграно ${multiplier} предмета</div>
+                    `;
                 }
             } else {
                 sellBtn.style.display = 'none'; 
@@ -1038,7 +1169,8 @@
 
         function keepWins() { 
             if (pendingWins.length > 0 && !pendingWins[0].isPlinko) { 
-                inventory.push(...pendingWins); 
+                // Важное изменение: добавляем ТОЧНО ТЕ ЖЕ объекты
+                inventory.push(...pendingWins.map(win => ({...win}))); 
                 saveGameState();
             }
             document.getElementById('win-modal').style.display = 'none'; 
@@ -1067,7 +1199,7 @@
             grid.innerHTML = inventory.map((item, idx) => `
                 <div class="gift-card" onclick="sellItem(${idx})">
                     <div class="gift-img-container">
-                        <img src="${item.img}" loading="lazy">
+                        <img src="${item.img}" alt="${item.name}" loading="lazy">
                     </div>
                     <span class="gift-name">${item.name}</span>
                     <b class="ton-style">${item.price} TON</b>
@@ -1115,7 +1247,7 @@
             }
             list.innerHTML = inventory.map((item, idx) => `
                 <div class="inv-item-pick" id="pick-${idx}" onclick="selectItemForPlinko(${idx})">
-                    <img src="${item.img}" loading="lazy">
+                    <img src="${item.img}" alt="${item.name}" loading="lazy">
                 </div>
             `).join('');
         }
@@ -1473,19 +1605,23 @@
             const loadingStatus = document.getElementById('loading-status');
             loadingStatus.textContent = 'Запуск приложения...';
             
-            // Начинаем инициализацию Telegram
+            // Инициализируем Telegram пользователя
             initTelegramUser();
+            
+            // Запускаем приложение через короткую задержку
+            setTimeout(() => {
+                initAppAfterTelegram();
+            }, 300);
             
             // Защита от зависания: через 3 секунды принудительно показываем приложение
             setTimeout(() => {
                 const loadingScreen = document.getElementById('loading-screen');
                 if (loadingScreen.style.display !== 'none') {
-                    console.log('Принудительная загрузка из-за таймаута');
-                    loadingStatus.textContent = 'Таймаут, загружаем приложение...';
+                    loadingStatus.textContent = 'Загрузка завершена!';
                     initAppAfterTelegram();
                 }
             }, 3000);
         });
     </script>
 </body>
-</html> 
+</html>
