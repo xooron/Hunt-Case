@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Hunt Case</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0d10;
+            --surface: #16191f;
+            --surface-light: #1f232c;
+            --accent: #3b82f6;
+            --border: #262a33;
+            --text: #ffffff;
+            --text-dim: #8e94a0;
+            --gift-radius: 24px;
+        }
+
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            scrollbar-width: none;
+        }
+        *::-webkit-scrollbar { display: none; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+            height: 100vh; width: 100vw;
+            position: fixed;
+        }
+
+        .ton-style { font-weight: 900; color: var(--accent); text-transform: uppercase; }
+
+        header {
+            position: fixed; top: 0; width: 100%; height: 60px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; z-index: 9000;
+            background: rgba(11, 13, 16, 0.95);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--border);
+        }
+        .logo { font-weight: 900; font-size: 1.2rem; letter-spacing: 1px; }
+        .balance-card {
+            background: var(--surface); padding: 8px 14px; border-radius: 12px;
+            display: flex; align-items: center; gap: 6px; border: 1px solid var(--border);
+        }
+
+        main { padding: 75px 16px 100px; height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .page { display: none; width: 100%; }
+        .page.active { display: block; }
+
+        h2 { font-weight: 800; font-size: 1rem; margin-bottom: 16px; color: var(--text-dim); text-transform: uppercase; }
+
+        .card-grid { display: grid; gap: 12px; }
+        .game-item { position: relative; height: 140px; border-radius: 24px; overflow: hidden; border: 1px solid var(--border); cursor: pointer; }
+        .game-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 24px; }
+        .game-overlay {
+            position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            display: flex; flex-direction: column; justify-content: flex-end; padding: 16px;
+        }
+        .btn-mini { background: var(--accent); color: #fff; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 800; font-size: 0.7rem; width: fit-content; }
+
+        #case-detail, #plinko-detail {
+            position: fixed; inset: 0; background: var(--bg); z-index: 8000;
+            display: none; flex-direction: column; padding-top: 60px;
+            overflow-y: auto;
+        }
+
+        .case-top-bar { padding: 10px 16px; display: flex; align-items: center; }
+        .btn-back {
+            background: var(--surface); color: #fff; border: 1px solid var(--border);
+            padding: 8px 16px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+        }
+
+        .roulette-container {
+            position: relative; width: calc(100% - 32px); height: 110px;
+            background: var(--surface); border-radius: 24px;
+            border: 1px solid var(--border); overflow: hidden; margin: 10px 16px;
+        }
+        .roulette-container::after {
+            content: ''; position: absolute; left: 50%; top: 0; bottom: 0;
+            width: 2px; background: var(--accent); z-index: 10; transform: translateX(-50%);
+            box-shadow: 0 0 10px var(--accent);
+        }
+        .reel-track { display: flex; position: absolute; left: 0; top: 0; height: 100%; align-items: center; transition: transform 4s cubic-bezier(0.1, 0, 0.1, 1); }
+        .reel-slot { min-width: 90px; height: 100%; display: flex; align-items: center; justify-content: center; padding: 6px; }
+        .reel-slot .gift-img-container { width: 80px; height: 80px; border-radius: 18px; margin-bottom: 0; }
+
+        .plinko-game-container {
+            flex: 1; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; padding: 10px; position: relative; min-height: 460px;
+        }
+        #plinko-canvas {
+            width: 100%; max-width: 400px; background: #1a1e26;
+            border-radius: 28px; border: 1px solid var(--border);
+        }
+        .plinko-controls { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        
+        .inventory-selector {
+            display: flex; gap: 10px; overflow-x: auto; padding: 10px 0;
+            scrollbar-width: none;
+        }
+        .inv-item-pick {
+            min-width: 80px; height: 80px; background: var(--surface); border: 2px solid var(--border);
+            border-radius: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.2s;
+        }
+        .inv-item-pick.selected { border-color: var(--accent); background: #1e293b; }
+        .inv-item-pick img { width: 70%; height: 70%; object-fit: contain; border-radius: 10px; }
+
+        .case-controls { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .mult-selector { 
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; 
+            background: var(--surface); padding: 5px; border-radius: 16px;
+        }
+        .m-btn { background: transparent; border: none; padding: 12px; border-radius: 12px; color: var(--text-dim); font-weight: 800; font-size: 0.9rem; }
+        .m-btn.active { background: var(--accent); color: #fff; }
+
+        .btn-open-main { background: var(--accent); border: none; padding: 18px; border-radius: 16px; font-weight: 900; color: #fff; font-size: 1rem; cursor: pointer; }
+        .btn-open-main:disabled { opacity: 0.5; cursor: default; }
+
+        .gift-card {
+            background: var(--surface); border-radius: var(--gift-radius);
+            padding: 12px; text-align: center; border: 1px solid var(--border);
+        }
+        .gift-img-container {
+            width: 100%; aspect-ratio: 1/1; background: var(--surface-light);
+            border-radius: 20px; display: flex; align-items: center; justify-content: center;
+            margin-bottom: 10px; overflow: hidden;
+        }
+        .gift-img-container img { width: 85%; height: 85%; object-fit: contain; border-radius: 15px; }
+        .gift-name { font-size: 0.75rem; font-weight: 700; color: #fff; margin-bottom: 4px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95);
+            z-index: 9500; display: none; align-items: center; justify-content: center; padding: 20px;
+        }
+        .win-card {
+            background: var(--surface); width: 100%; max-width: 340px;
+            border-radius: 32px; border: 1px solid var(--border);
+            padding: 24px; text-align: center;
+        }
+        .win-total-ton { font-size: 1.5rem; margin-bottom: 24px; display: block; }
+        .modal-btns { display: flex; flex-direction: column; gap: 10px; }
+        .b-action { padding: 16px; border-radius: 16px; border: none; font-weight: 800; font-size: 0.9rem; cursor: pointer; }
+        .b-keep { background: var(--accent); color: #fff; }
+        .b-sell { background: var(--surface-light); border: 1px solid var(--border); color: #fff; }
+
+        .content-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 0 16px 40px; }
+
+        .promo-panel { padding: 0 16px 20px; }
+        .promo-input-group { display: flex; gap: 8px; }
+        .promo-input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; color: #fff; }
+        .promo-btn { background: var(--accent); border: none; padding: 0 20px; border-radius: 12px; color: #fff; font-weight: 800; }
+
+        nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: var(--bg); border-top: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
+        .nav-link { text-decoration: none; color: var(--text-dim); display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .nav-link.active { color: var(--accent); }
+        .nav-icon { width: 22px; height: 22px; background: currentColor; mask-size: contain; -webkit-mask-size: contain; }
+        .nav-link span { font-size: 0.7rem; font-weight: 700; }
+
+        #loading-screen { 
+            position: fixed; 
+            inset: 0; 
+            background: #000; 
+            z-index: 9999; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            flex-direction: column;
+            transition: opacity 0.3s ease;
+        }
+        @keyframes fill {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; display: none; }
+        }
+        
+        /* ПРОФИЛЬ */
+        .profile-header {
+            background: var(--surface); 
+            border-radius: 24px; 
+            padding: 20px; 
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .profile-header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .avatar-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .avatar-container {
+            width: 70px; 
+            height: 70px; 
+            border-radius: 20px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            border: 3px solid var(--accent);
+            overflow: hidden;
+        }
+        
+        .avatar-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .settings-btn {
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text);
+            font-size: 1.2rem;
+        }
+        
+        .level-panel {
+            background: var(--surface);
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .level-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .level-title {
+            font-weight: 900;
+            font-size: 1.1rem;
+        }
+        
+        .help-btn {
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: 900;
+        }
+        
+        .level-progress-container {
+            position: relative;
+            margin-bottom: 10px;
+        }
+        
+        .level-progress-bar {
+            width: 100%;
+            height: 12px;
+            background: var(--surface-light);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .level-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), #60a5fa);
+            border-radius: 6px;
+            transition: width 0.3s ease;
+        }
+        
+        .level-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+        
+        .current-level {
+            font-weight: 900;
+            color: var(--accent);
+        }
+        
+        .settings-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .settings-card {
+            background: var(--surface);
+            width: 100%;
+            max-width: 340px;
+            border-radius: 32px;
+            border: 1px solid var(--border);
+            padding: 24px;
+            text-align: center;
+        }
+        
+        .settings-title {
+            font-weight: 900;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+        
+        .color-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .color-option {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            margin: 0 auto;
+        }
+        
+        .color-option.selected {
+            border-color: var(--text);
+        }
+        
+        .effect-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .effect-option {
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .effect-option.selected {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        
+        .reset-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-weight: 900;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .close-settings {
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border: none;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .case-redwood {
+            background: linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%);
+            border-color: #9a3412;
+        }
+        
+        .redwood-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #dc2626, #7c2d12);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+            box-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
+        }
+        
+        .case-black {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            border-color: #333333;
+        }
+        
+        .black-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #000000, #333333);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+            color: #fff;
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <div style="font-weight:900; letter-spacing:4px;">HUNT CASE</div>
+        <div style="width: 140px; height: 2px; background: #222; margin-top: 20px;"><div style="width: 100%; height: 100%; background: var(--accent); animation: fill 1.2s forwards;"></div></div>
+        <div id="loading-status" style="margin-top: 20px; font-size: 0.8rem; color: var(--text-dim);">Загрузка...</div>
+    </div>
+
+    <header>
+        <div class="logo">HUNT CASE</div>
+        <div class="balance-card">
+            <span id="user-balance" class="ton-style">150.00</span> <span class="ton-style">TON</span>
+        </div>
+    </header>
+
+    <!-- PLINKO PAGE -->
+    <div id="plinko-detail">
+        <div class="case-top-bar"><button class="btn-back" onclick="closePlinko()">← НАЗАД</button></div>
+        <div class="plinko-game-container">
+            <canvas id="plinko-canvas"></canvas>
+        </div>
+        <div class="plinko-controls">
+            <div style="font-size: 0.75rem; color: var(--text-dim); font-weight: 800;">СТАВКА ПОДАРКОМ:</div>
+            <div class="inventory-selector" id="plinko-inv-list"></div>
+            <button class="btn-open-main" id="plinko-play-btn" onclick="playPlinko()">ИГРАТЬ ПЛИНКО</button>
+        </div>
+    </div>
+
+    <!-- CASE DETAIL -->
+    <div id="case-detail">
+        <div class="case-top-bar"><button class="btn-back" id="back-btn" onclick="closeCase()">← НАЗАД</button></div>
+        <div id="reels-wrapper"></div>
+        <div class="case-controls">
+            <div class="mult-selector">
+                <button class="m-btn active" onclick="updateMultiplier(1, this)">x1</button>
+                <button class="m-btn" onclick="updateMultiplier(2, this)">x2</button>
+                <button class="m-btn" onclick="updateMultiplier(3, this)">x3</button>
+                <button class="m-btn" onclick="updateMultiplier(4, this)">x4</button>
+                <button class="m-btn" onclick="updateMultiplier(5, this)">x5</button>
+            </div>
+            <button class="btn-open-main" id="spin-btn" onclick="executeSpin()">ОТКРЫТЬ КЕЙС</button>
+        </div>
+        <h2 style="text-align:center; margin-top:10px;">В ЭТОМ КЕЙСЕ</h2>
+        <div class="content-grid" id="case-items-display"></div>
+    </div>
+
+    <!-- WIN MODAL -->
+    <div id="win-modal" class="modal-overlay">
+        <div class="win-card">
+            <h2 id="win-title" style="color:#fff; margin-bottom:20px; font-size:1.2rem;">ВЫПАЛО</h2>
+            <div id="win-visual-area" style="margin-bottom:20px;"></div>
+            <span id="win-total-sum" class="ton-style win-total-ton">0.00 TON</span>
+            <div class="modal-btns">
+                <button class="b-action b-keep" onclick="keepWins()">ОСТАВИТЬ</button>
+                <button class="b-action b-sell" id="sell-btn-text" onclick="sellWins()">ПРОДАТЬ ВСЁ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal" class="settings-modal">
+        <div class="settings-card">
+            <div class="settings-title">НАСТРОЙКИ ПРОФИЛЯ</div>
+            
+            <div style="text-align: left; margin-bottom: 15px; font-size: 0.9rem;">Цвет фона профиля:</div>
+            <div class="color-options" id="color-options">
+                <div class="color-option selected" style="background: #16191f;" onclick="selectColor('#16191f', this)"></div>
+                <div class="color-option" style="background: #1e293b;" onclick="selectColor('#1e293b', this)"></div>
+                <div class="color-option" style="background: #0f172a;" onclick="selectColor('#0f172a', this)"></div>
+                <div class="color-option" style="background: #1c1917;" onclick="selectColor('#1c1917', this)"></div>
+                <div class="color-option" style="background: #1e1b4b;" onclick="selectColor('#1e1b4b', this)"></div>
+                <div class="color-option" style="background: #1a1a2e;" onclick="selectColor('#1a1a2e', this)"></div>
+                <div class="color-option" style="background: linear-gradient(135deg, #1e293b, #0f172a);" onclick="selectColor('gradient-dark', this)"></div>
+                <div class="color-option" style="background: linear-gradient(135deg, #3b82f6, #1e40af);" onclick="selectColor('gradient-blue', this)"></div>
+            </div>
+            
+            <div style="text-align: left; margin-bottom: 15px; font-size: 0.9rem;">Эффекты:</div>
+            <div class="effect-options" id="effect-options">
+                <div class="effect-option" onclick="selectEffect('none', this)">Нет</div>
+                <div class="effect-option" onclick="selectEffect('glow', this)">Свечение</div>
+                <div class="effect-option" onclick="selectEffect('border', this)">Обводка</div>
+            </div>
+            
+            <button class="reset-btn" onclick="resetAccount()">СБРОСИТЬ АККАУНТ</button>
+            <button class="close-settings" onclick="closeSettings()">ЗАКРЫТЬ</button>
+        </div>
+    </div>
+
+    <!-- HELP MODAL -->
+    <div id="help-modal" class="modal-overlay">
+        <div class="win-card">
+            <h2 style="color:#fff; margin-bottom:20px; font-size:1.2rem;">СИСТЕМА УРОВНЕЙ</h2>
+            <div style="text-align: left; margin-bottom: 20px;">
+                <p style="margin-bottom: 10px;">• За каждый открытый кейс вы получаете <b>+10 XP</b></p>
+                <p style="margin-bottom: 10px;">• Уровень 1-10: для нового уровня нужно <b>350 XP</b></p>
+                <p style="margin-bottom: 10px;">• Уровень 11+: для нового уровня нужно <b>600 XP</b></p>
+                <p style="margin-bottom: 10px;">• С повышением уровня увеличивается шанс на редкие предметы</p>
+                <p>• Уровень влияет на бонусы и специальные предложения</p>
+            </div>
+            <button class="b-action b-keep" onclick="closeHelp()">ПОНЯТНО</button>
+        </div>
+    </div>
+
+    <main>
+        <div id="page-game" class="page active">
+            <h2>ИГРЫ</h2>
+            <div class="card-grid">
+                <div class="game-item" onclick="openPlinko()">
+                    <img src="https://avatars.mds.yandex.net/i?id=ddc0a454d6e42038578ee1683dfd6febf4db62c5-5234303-images-thumbs&n=13">
+                    <div class="game-overlay"><h3>Plinko</h3><button class="btn-mini">PLAY</button></div>
+                </div>
+                <div class="game-item"><img src="https://avatars.mds.yandex.net/i?id=79e98336fb98bd8ea9d32c7635b7a45779337570-5224088-images-thumbs&n=13"><div class="game-overlay"><h3>Upgrade</h3><button class="btn-mini">PLAY</button></div></div>
+                <div class="game-item"><img src="https://avatars.mds.yandex.net/i?id=664b43d4eb5c871f27564c90a422a241bfb8e11b-5426798-images-thumbs&n=13"><div class="game-overlay"><h3>Conntract</h3><button class="btn-mini">PLAY</button></div></div>
+                <div class="game-item"><img src="https://avatars.mds.yandex.net/i?id=5da6805658ded23a346300b58ed3985426d42d0e-11270391-images-thumbs&n=13"><div class="game-overlay"><h3>Crash</h3><button class="btn-mini">PLAY</button></div></div>
+            </div>
+        </div>
+
+        <div id="page-cases" class="page">
+            <h2>КЕЙСЫ</h2>
+            <div class="card-grid">
+                <div class="game-item" style="height:auto; padding:20px; background:var(--surface);" onclick="openCaseDetail('aura')">
+                    <span style="color:var(--accent); font-weight:800; font-size:0.6rem;">HuntCase</span>
+                    <h3 style="font-weight:900; margin:5px 0 10px; font-size:1.3rem;">AURA CASE</h3>
+                    <div class="ton-style">5.00 TON</div>
+                    <img src="https://cdn-icons-png.flaticon.com/512/679/679821.png" style="width:60px; position:absolute; right:20px; bottom:20px; opacity:0.8; border-radius:15px;">
+                </div>
+                
+                <div class="game-item case-redwood" style="height:auto; padding:20px;" onclick="openCaseDetail('redwood')">
+                    <span style="color:#fca5a5; font-weight:800; font-size:0.6rem;">HuntCase</span>
+                    <h3 style="font-weight:900; margin:5px 0 10px; font-size:1.3rem; color:#fff;">REDWOOD CASE</h3>
+                    <div style="color:#fca5a5; font-weight:900;">12.00 TON</div>
+                    <div class="redwood-icon">
+                        <span style="font-size:1.5rem;">🌲</span>
+                    </div>
+                </div>
+                
+                <div class="game-item case-black" style="height:auto; padding:20px;" onclick="openCaseDetail('black')">
+                    <span style="color:#fff; font-weight:800; font-size:0.6rem;">HuntCase</span>
+                    <h3 style="font-weight:900; margin:5px 0 10px; font-size:1.3rem; color:#fff;">BLACK CASE</h3>
+                    <div style="color:#fff; font-weight:900;">50.00 TON</div>
+                    <div class="black-icon">
+                        <span style="font-size:1.5rem;">⚫</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-profile" class="page">
+            <div class="profile-header" id="profile-header">
+                <div class="profile-header-content">
+                    <div class="avatar-section">
+                        <div class="avatar-container" id="avatar-container">
+                            <img id="user-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Default">
+                        </div>
+                        <div>
+                            <h3 id="user-name" style="font-weight:900; margin-bottom:5px;">@Игрок</h3>
+                            <div style="font-size:0.8rem; color:var(--text-dim);">Игрок</div>
+                        </div>
+                    </div>
+                    <div class="settings-btn" onclick="openSettings()">⚙️</div>
+                </div>
+            </div>
+            
+            <div class="level-panel">
+                <div class="level-header">
+                    <div class="level-title">УРОВЕНЬ <span id="current-level" class="current-level">1</span></div>
+                    <div class="help-btn" onclick="openHelp()">?</div>
+                </div>
+                
+                <div class="level-progress-container">
+                    <div class="level-progress-bar">
+                        <div class="level-progress-fill" id="level-progress-fill" style="width: 15%;"></div>
+                    </div>
+                </div>
+                
+                <div class="level-stats">
+                    <div><span id="current-xp">50</span>/<span id="required-xp">350</span> XP</div>
+                    <div>До уровня <span id="next-level">2</span>: <span id="xp-remaining">300</span> XP</div>
+                </div>
+            </div>
+            
+            <div class="promo-panel">
+                <div style="font-size:0.75rem; color:var(--text-dim); font-weight:800;">ПРОМОКОД</div>
+                <div class="promo-input-group"><input type="text" class="promo-input" id="promo-field" placeholder="Введите код..."><button class="promo-btn" onclick="applyPromo()">OK</button></div>
+            </div>
+            <h2>ИНВЕНТАРЬ</h2>
+            <div id="inv-empty" style="text-align:center; padding:40px; opacity:0.2;">ПУСТО</div>
+            <div class="content-grid" id="inventory-grid"></div>
+        </div>
+    </main>
+
+    <nav>
+        <a href="#" class="nav-link active" onclick="navTo('page-game', this)"><div class="nav-icon" style="-webkit-mask-image: url('https://cdn-icons-png.flaticon.com/512/808/808513.png');"></div><span>Game</span></a>
+        <a href="#" class="nav-link" onclick="navTo('page-cases', this)"><div class="nav-icon" style="-webkit-mask-image: url('https://cdn-icons-png.flaticon.com/512/679/679821.png');"></div><span>Cases</span></a>
+        <a href="#" class="nav-link" onclick="navTo('page-profile', this)"><div class="nav-icon" style="-webkit-mask-image: url('https://cdn-icons-png.flaticon.com/512/1077/1077063.png');"></div><span>Profile</span></a>
+    </nav>
+
+    <script>
+        // =========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===========
+        let balance = 150.00;
+        let inventory = [];
+        let multiplier = 1;
+        let pendingWins = [];
+        let isSpinning = false;
+        let selectedInvIdx = -1;
+        let currentCaseType = 'aura';
+        
+        // Данные игрока
+        let playerXP = 50;
+        let playerLevel = 1;
+        let casesOpened = 0;
+        let profileColor = '#16191f';
+        let profileEffect = 'none';
+
+        // Данные кейсов
+        const auraItems = [
+            { name: "Lol Pop", price: 2, img: "https://avatars.mds.yandex.net/i?id=aa24320cd9ab828586f5b7f468d0174dc5006aea-4981909-images-thumbs&n=13", w: 45 },
+            { name: "Desk Calendar", price: 2, img: "https://avatars.mds.yandex.net/i?id=19a082df3e859fa93fa2b2e0f82572273085e16f-13469218-images-thumbs&n=13", w: 40 },
+            { name: "Lunar Snake", price: 3, img: "https://avatars.mds.yandex.net/i?id=0e204462528d01abb22491c9e0a111df6b4c7ce8-5587324-images-thumbs&n=13", w: 30 },
+            { name: "Crustal Ball", price: 11, img: "https://avatars.mds.yandex.net/i?id=5fee0dcee3571b25e5d4708f2f9dc96ed367a12a-10256883-images-thumbs&n=13", w: 10 },
+            { name: "Love Candle", price: 13, img: "https://avatars.mds.yandex.net/i?id=5eb7f4588813ff561344f60886cffe4b5f6ff63e-3908415-images-thumbs&n=13", w: 5 },
+            { name: "Love Potions", price: 16, img: "https://avatars.mds.yandex.net/i?id=fc11d7f33a28221125c65166ccba6a6ef81dd947-5216291-images-thumbs&n=13", w: 3 },
+            { name: "Love Riders", price: 56, img: "https://avatars.mds.yandex.net/i?id=37969efc85ac230a920caa8c5c9deec89282d014-5283550-images-thumbs&n=13", w: 1 },
+            { name: "Magic Potion", price: 89, img: "https://avatars.mds.yandex.net/i?id=f1ef2ca738a49919f48531f3be8e762f5a2ba309-6295814-images-thumbs&n=13", w: 0.5 }
+        ];
+
+        const redwoodItems = [
+            { name: "LolPop", price: 2, img: "https://avatars.mds.yandex.net/i?id=f7384db00142c1498c2ca18648d54569bac0f401-5362633-images-thumbs&n=13", w: 45 },
+            { name: "Snake Box", price: 4, img: "https://avatars.mds.yandex.net/i?id=c902103f68bea8e8f2cc136ebfd4b1cd_sr-5041987-images-thumbs&n=13", w: 35 },
+            { name: "Berry Box", price: 8, img: "https://avatars.mds.yandex.net/i?id=1fae9d755d87210b43e3ff37049c3237fca19f2b-8497168-images-thumbs&n=13", w: 25 },
+            { name: "Flying Broom", price: 12, img: "https://avatars.mds.yandex.net/i?id=a5ebef9e1d4410e4153c909b747b1b0c74a90a51-10507506-images-thumbs&n=13", w: 15 },
+            { name: "Cupid Charm", price: 21, img: "https://avatars.mds.yandex.net/i?id=5033001e66721cd2619b786171806f9a90e38a08-5666317-images-thumbs&n=13", w: 8 },
+            { name: "Neko Helmet", price: 43, img: "https://avatars.mds.yandex.net/i?id=797aea903039bc83f771ea072f83891a7d944a19-4255243-images-thumbs&n=13", w: 3 },
+            { name: "Nail Bracelet", price: 145, img: "https://avatars.mds.yandex.net/i?id=c6cc64737593c8063a4973d82faa377cf03ae458-5515133-images-thumbs&n=13", w: 0.5 }
+        ];
+        
+        const blackItems = [
+            { name: "Lol Pop", price: 15, img: "https://avatars.mds.yandex.net/i?id=3946310e35ce5981eceb94aff45b45e78e4b2fd5-5239602-images-thumbs&n=13", w: 40 },
+            { name: "Desk Calendar", price: 17, img: "https://avatars.mds.yandex.net/i?id=b41d9f116e9fe0ba1912f7203dbe5fabc6a32464-5240166-images-thumbs&n=13", w: 35 },
+            { name: "Cupid Charm", price: 90, img: "https://avatars.mds.yandex.net/i?id=30f79e57269ce55b6f4bd642eaf43e30_sr-4590899-images-thumbs&n=13", w: 15 },
+            { name: "Neko Helmet", price: 210, img: "https://avatars.mds.yandex.net/i?id=77a37ae66c057a9f68859abcf4352385c01d8d4b-11043615-images-thumbs&n=13", w: 8 },
+            { name: "Scared Cat", price: 450, img: "https://avatars.mds.yandex.net/i?id=12fbba1246f9321fdeabd24e106b9e5c39af541c-4219822-images-thumbs&n=13", w: 1.999 },
+            { name: "Plush Pepe", price: 25000, img: "https://avatars.mds.yandex.net/i?id=c0046edbbc73a1bcb259d877578621284ad96d22-4752921-images-thumbs&n=13", w: 0.001 }
+        ];
+
+        // =========== СИСТЕМА СОХРАНЕНИЯ ===========
+        function saveGameState() {
+            const gameState = {
+                balance: balance,
+                inventory: inventory,
+                playerXP: playerXP,
+                playerLevel: playerLevel,
+                casesOpened: casesOpened,
+                profileColor: profileColor,
+                profileEffect: profileEffect
+            };
+            localStorage.setItem('huntCaseGameState', JSON.stringify(gameState));
+            console.log('Сохранено состояние игры');
+        }
+
+        function loadGameState() {
+            const loadingStatus = document.getElementById('loading-status');
+            loadingStatus.textContent = 'Загрузка сохранений...';
+            
+            const localState = localStorage.getItem('huntCaseGameState');
+            if (localState) {
+                try {
+                    const savedState = JSON.parse(localState);
+                    balance = savedState.balance || 150.00;
+                    inventory = savedState.inventory || [];
+                    playerXP = savedState.playerXP || 50;
+                    playerLevel = savedState.playerLevel || 1;
+                    casesOpened = savedState.casesOpened || 0;
+                    profileColor = savedState.profileColor || '#16191f';
+                    profileEffect = savedState.profileEffect || 'none';
+                    
+                    loadingStatus.textContent = 'Сохранения загружены!';
+                    return true;
+                } catch (e) {
+                    console.log('Ошибка загрузки из localStorage:', e);
+                    loadingStatus.textContent = 'Ошибка загрузки сохранений';
+                }
+            } else {
+                loadingStatus.textContent = 'Нет сохранений, новый игрок';
+            }
+            return false;
+        }
+
+        function applyProfileSettings() {
+            const profileHeader = document.getElementById('profile-header');
+            const avatarContainer = document.getElementById('avatar-container');
+            
+            // Применяем цвет
+            if (profileColor.startsWith('gradient')) {
+                if (profileColor === 'gradient-dark') {
+                    profileHeader.style.background = 'linear-gradient(135deg, #1e293b, #0f172a)';
+                } else if (profileColor === 'gradient-blue') {
+                    profileHeader.style.background = 'linear-gradient(135deg, #3b82f6, #1e40af)';
+                }
+            } else {
+                profileHeader.style.background = profileColor;
+            }
+            
+            // Применяем эффекты
+            profileHeader.style.boxShadow = '';
+            profileHeader.style.border = '';
+            avatarContainer.style.boxShadow = '';
+            
+            if (profileEffect === 'glow') {
+                profileHeader.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.5)';
+                avatarContainer.style.boxShadow = '0 0 15px rgba(59, 130, 246, 0.7)';
+            } else if (profileEffect === 'border') {
+                profileHeader.style.border = '2px solid #3b82f6';
+            }
+        }
+
+        // =========== ИНИЦИАЛИЗАЦИЯ TMA ===========
+        function initTelegramUser() {
+            const loadingStatus = document.getElementById('loading-status');
+            loadingStatus.textContent = 'Инициализация Telegram...';
+            
+            // Проверяем, запущено ли в Telegram
+            if (typeof window.Telegram === 'undefined' || !window.Telegram.WebApp) {
+                loadingStatus.textContent = 'Telegram не обнаружен, тестовый режим';
+                setTimeout(() => {
+                    initAppAfterTelegram();
+                }, 500);
+                return;
+            }
+            
+            const tg = window.Telegram.WebApp;
+            
+            // Инициализация Telegram WebApp
+            try {
+                tg.ready();
+                tg.expand();
+                
+                // Получаем данные пользователя
+                const user = tg.initDataUnsafe?.user;
+                if (user) {
+                    const username = user.username ? '@' + user.username : (user.first_name || 'Игрок');
+                    const firstName = user.first_name || 'Игрок';
+                    const userId = user.id || Date.now().toString();
+                    
+                    // Устанавливаем имя пользователя
+                    document.getElementById('user-name').textContent = username;
+                    
+                    // Устанавливаем аватарку
+                    const avatarImg = document.getElementById('user-avatar');
+                    if (user.photo_url) {
+                        avatarImg.src = user.photo_url;
+                        loadingStatus.textContent = 'Аватарка загружена';
+                    } else {
+                        // Используем DiceBear для генерации аватарки на основе ID пользователя
+                        avatarImg.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`;
+                        loadingStatus.textContent = 'Аватарка сгенерирована';
+                    }
+                } else {
+                    loadingStatus.textContent = 'Пользователь Telegram не найден';
+                    document.getElementById('user-name').textContent = '@Игрок';
+                }
+                
+                loadingStatus.textContent = 'Telegram готов!';
+            } catch (error) {
+                console.error('Ошибка инициализации Telegram:', error);
+                loadingStatus.textContent = 'Ошибка Telegram, тестовый режим';
+            }
+            
+            setTimeout(() => {
+                initAppAfterTelegram();
+            }, 800);
+        }
+
+        function initAppAfterTelegram() {
+            const loadingStatus = document.getElementById('loading-status');
+            loadingStatus.textContent = 'Запуск приложения...';
+            
+            // Загружаем сохраненное состояние
+            loadGameState();
+            
+            // Применяем настройки профиля
+            applyProfileSettings();
+            
+            // Обновляем UI
+            updateBalanceUI();
+            updateLevelDisplay();
+            renderInventory();
+            
+            // Инициализируем Plinko
+            initPlinkoBoard();
+            startPipeAnimation();
+            
+            // Скрываем экран загрузки
+            setTimeout(() => {
+                const loadingScreen = document.getElementById('loading-screen');
+                loadingScreen.style.opacity = '0';
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 300);
+            }, 500);
+        }
+
+        // =========== ОСНОВНЫЕ ФУНКЦИИ UI ===========
+        function updateBalanceUI() { 
+            document.getElementById('user-balance').innerText = balance.toFixed(2); 
+        }
+
+        function navTo(id, el) { 
+            if(isSpinning) return; 
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
+            document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active')); 
+            document.getElementById(id).classList.add('active'); 
+            el.classList.add('active'); 
+            if(id === 'page-profile') renderInventory(); 
+        }
+        
+        function openCaseDetail(caseType) { 
+            currentCaseType = caseType;
+            document.getElementById('case-detail').style.display = 'flex'; 
+            updateMultiplier(1, document.querySelector('.m-btn')); 
+            renderCaseContent(caseType);
+        }
+        
+        function closeCase() { 
+            if(isSpinning) return; 
+            document.getElementById('case-detail').style.display = 'none'; 
+        }
+
+        function renderCaseContent(caseType) {
+            const grid = document.getElementById('case-items-display');
+            let itemsToShow;
+            
+            if(caseType === 'redwood') {
+                itemsToShow = redwoodItems;
+            } else if(caseType === 'black') {
+                itemsToShow = blackItems;
+            } else {
+                itemsToShow = auraItems;
+            }
+            
+            grid.innerHTML = itemsToShow.map(i => `<div class="gift-card"><div class="gift-img-container"><img src="${i.img}"></div><span class="gift-name">${i.name}</span><b class="ton-style">${i.price} TON</b></div>`).join('');
+        }
+
+        function updateMultiplier(m, btn) {
+            if(isSpinning) return;
+            multiplier = m;
+            document.querySelectorAll('.m-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const wrapper = document.getElementById('reels-wrapper');
+            wrapper.innerHTML = '';
+            
+            let currentItems;
+            if(currentCaseType === 'redwood') {
+                currentItems = redwoodItems;
+            } else if(currentCaseType === 'black') {
+                currentItems = blackItems;
+            } else {
+                currentItems = auraItems;
+            }
+            
+            for(let i=0; i<m; i++) {
+                const container = document.createElement('div'); 
+                container.className = 'roulette-container';
+                const track = document.createElement('div'); 
+                track.className = 'reel-track'; 
+                track.id = `reel-${i}`;
+                
+                // Создаем слоты для рулетки
+                let slotsHTML = '';
+                for(let j=0; j<60; j++) { 
+                    const rnd = currentItems[Math.floor(Math.random()*currentItems.length)]; 
+                    slotsHTML += `<div class="reel-slot"><div class="gift-img-container"><img src="${rnd.img}" loading="lazy"></div></div>`; 
+                }
+                track.innerHTML = slotsHTML;
+                container.appendChild(track); 
+                wrapper.appendChild(container);
+            }
+        }
+
+        function getWeightedItem(itemsArray) {
+            const total = itemsArray.reduce((s, i) => s + i.w, 0);
+            let rnd = Math.random() * total;
+            for(let i of itemsArray) { 
+                if(rnd < i.w) return i; 
+                rnd -= i.w; 
+            }
+            return itemsArray[0];
+        }
+
+        function executeSpin() {
+            let cost, currentItems;
+            
+            if(currentCaseType === 'redwood') {
+                cost = multiplier * 12;
+                currentItems = redwoodItems;
+            } else if(currentCaseType === 'black') {
+                cost = multiplier * 50;
+                currentItems = blackItems;
+            } else {
+                cost = multiplier * 5;
+                currentItems = auraItems;
+            }
+            
+            if(balance < cost) {
+                alert("Недостаточно TON");
+                return;
+            }
+            
+            isSpinning = true;
+            document.getElementById('spin-btn').disabled = true;
+            document.querySelectorAll('.m-btn').forEach(b => b.disabled = true);
+            document.getElementById('back-btn').style.opacity = '0.3';
+
+            balance -= cost; 
+            updateBalanceUI();
+            
+            // Добавляем XP за открытие кейса
+            playerXP += multiplier * 10;
+            casesOpened += multiplier;
+            updateLevel();
+            updateLevelDisplay();
+            
+            pendingWins = [];
+            const slotWidth = 90; 
+            const stopIdx = 45;
+
+            for(let i=0; i<multiplier; i++) {
+                const win = getWeightedItem(currentItems);
+                pendingWins.push(win);
+                
+                const track = document.getElementById(`reel-${i}`);
+                const targetSlotImg = track.querySelectorAll('.reel-slot')[stopIdx].querySelector('img');
+                targetSlotImg.src = win.img;
+
+                const wrapperWidth = track.parentElement.offsetWidth;
+                const targetPos = (stopIdx * slotWidth) - (wrapperWidth / 2) + (slotWidth / 2);
+                
+                setTimeout(() => { 
+                    track.style.transition = 'transform 4s cubic-bezier(0.1, 0, 0.1, 1)';
+                    track.style.transform = `translateX(-${targetPos}px)`; 
+                }, i * 100);
+            }
+            
+            setTimeout(() => { 
+                isSpinning = false;
+                document.getElementById('spin-btn').disabled = false;
+                document.querySelectorAll('.m-btn').forEach(b => b.disabled = false);
+                document.getElementById('back-btn').style.opacity = '1';
+                showWinModal('case');
+                saveGameState();
+            }, 4300);
+        }
+
+        function showWinModal(mode) {
+            const area = document.getElementById('win-visual-area');
+            const totalText = document.getElementById('win-total-sum');
+            const sellBtn = document.getElementById('sell-btn-text');
+            area.innerHTML = '';
+            let total = 0;
+
+            if (mode === 'case') {
+                sellBtn.style.display = 'block';
+                if(multiplier === 1) {
+                    const win = pendingWins[0];
+                    area.innerHTML = `
+                        <div class="gift-img-container" style="width:140px; height:140px; margin: 0 auto;">
+                            <img src="${win.img}" style="width:100%; height:100%; object-fit:contain;">
+                        </div>
+                        <div style="font-weight:900; margin-top:15px; font-size:1.1rem;">${win.name}</div>
+                    `;
+                    total = win.price;
+                } else {
+                    area.style.display = 'grid'; 
+                    area.style.gridTemplateColumns = 'repeat(3, 1fr)'; 
+                    area.style.gap = '10px';
+                    pendingWins.forEach(win => {
+                        total += win.price;
+                        area.innerHTML += `
+                            <div class="gift-card" style="padding:5px; border:none; background:none;">
+                                <div class="gift-img-container" style="margin-bottom:0;">
+                                    <img src="${win.img}">
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+            } else {
+                sellBtn.style.display = 'none'; 
+                const win = pendingWins[0];
+                area.innerHTML = `
+                    <div style="font-size: 3.5rem; margin-bottom: 10px;">${win.icon}</div>
+                    <div style="font-weight:900; font-size:1.5rem;">${win.name}</div>
+                    <div style="color:var(--text-dim); font-size:0.8rem; margin-top:5px;">${win.desc}</div>
+                `;
+                total = win.price;
+            }
+
+            totalText.innerText = `${total.toFixed(2)} TON`;
+            document.getElementById('win-modal').style.display = 'flex';
+        }
+
+        function keepWins() { 
+            if (pendingWins.length > 0 && !pendingWins[0].isPlinko) { 
+                inventory.push(...pendingWins); 
+                saveGameState();
+            }
+            document.getElementById('win-modal').style.display = 'none'; 
+            if(document.getElementById('case-detail').style.display === 'flex') {
+                updateMultiplier(multiplier, document.querySelector('.m-btn.active')); 
+            }
+            if(document.getElementById('plinko-detail').style.display === 'flex') {
+                renderPlinkoInventory();
+            }
+        }
+
+        function sellWins() { 
+            const totalWins = pendingWins.reduce((s, w) => s + w.price, 0);
+            balance += totalWins; 
+            updateBalanceUI(); 
+            document.getElementById('win-modal').style.display = 'none'; 
+            saveGameState();
+            if(document.getElementById('case-detail').style.display === 'flex') {
+                updateMultiplier(multiplier, document.querySelector('.m-btn.active')); 
+            }
+        }
+        
+        function renderInventory() { 
+            const grid = document.getElementById('inventory-grid'); 
+            document.getElementById('inv-empty').style.display = inventory.length ? 'none' : 'block'; 
+            grid.innerHTML = inventory.map((item, idx) => `
+                <div class="gift-card" onclick="sellItem(${idx})">
+                    <div class="gift-img-container">
+                        <img src="${item.img}" loading="lazy">
+                    </div>
+                    <span class="gift-name">${item.name}</span>
+                    <b class="ton-style">${item.price} TON</b>
+                </div>
+            `).join(''); 
+        }
+        
+        function sellItem(idx) { 
+            if (idx < 0 || idx >= inventory.length) return;
+            
+            balance += inventory[idx].price; 
+            inventory.splice(idx, 1); 
+            updateBalanceUI(); 
+            renderInventory(); 
+            saveGameState();
+        }
+
+        // =========== PLINKO ===========
+        const plinkoCanvas = document.getElementById('plinko-canvas');
+        const pCtx = plinkoCanvas.getContext('2d');
+        const plinkoMultipliers = [0, 5, 3, 1, 0, 1, 3, 5, 0];
+        let pipeX = 200, pipeDir = 1;
+        let currentBallAnimation = null;
+
+        function openPlinko() { 
+            document.getElementById('plinko-detail').style.display = 'flex'; 
+            renderPlinkoInventory(); 
+        }
+        
+        function closePlinko() { 
+            if(isSpinning) return; 
+            document.getElementById('plinko-detail').style.display = 'none'; 
+            if (currentBallAnimation) {
+                cancelAnimationFrame(currentBallAnimation);
+                currentBallAnimation = null;
+            }
+        }
+        
+        function renderPlinkoInventory() {
+            const list = document.getElementById('plinko-inv-list');
+            selectedInvIdx = -1;
+            if(inventory.length === 0) { 
+                list.innerHTML = '<div style="color:var(--text-dim); font-size:0.8rem; padding:10px;">Инвентарь пуст</div>'; 
+                return; 
+            }
+            list.innerHTML = inventory.map((item, idx) => `
+                <div class="inv-item-pick" id="pick-${idx}" onclick="selectItemForPlinko(${idx})">
+                    <img src="${item.img}" loading="lazy">
+                </div>
+            `).join('');
+        }
+        
+        function selectItemForPlinko(idx) { 
+            if(isSpinning) return; 
+            selectedInvIdx = idx; 
+            document.querySelectorAll('.inv-item-pick').forEach(el => el.classList.remove('selected')); 
+            document.getElementById(`pick-${idx}`).classList.add('selected'); 
+        }
+        
+        function initPlinkoBoard() { 
+            if (!plinkoCanvas) return;
+            plinkoCanvas.width = 400; 
+            plinkoCanvas.height = 500; 
+            drawPlinkoStatic(null); 
+        }
+        
+        function startPipeAnimation() { 
+            setInterval(() => { 
+                if(!isSpinning) { 
+                    pipeX += 2 * pipeDir; 
+                    if(pipeX > 360 || pipeX < 40) pipeDir *= -1; 
+                } 
+                drawPlinkoStatic(null); 
+            }, 40);
+        }
+
+        function drawPlinkoStatic(ballPos) {
+            if (!pCtx) return;
+            
+            pCtx.clearRect(0, 0, 400, 500);
+            
+            // Труба
+            pCtx.fillStyle = "#3b82f6"; 
+            pCtx.beginPath(); 
+            pCtx.roundRect(pipeX - 25, 0, 50, 30, [0, 0, 10, 10]); 
+            pCtx.fill();
+            
+            // Штифты Plinko
+            pCtx.fillStyle = "#4a5568";
+            for (let r = 0; r < 8; r++) {
+                let rowPegs = r + 2;
+                for (let i = 0; i < rowPegs; i++) {
+                    let x = 200 + (i - (rowPegs - 1) / 2) * 40;
+                    let y = 80 + r * 45;
+                    pCtx.beginPath(); 
+                    pCtx.arc(x, y, 5, 0, Math.PI * 2);
+                    pCtx.fill();
+                }
+            }
+            
+            // Ячейки внизу
+            const sw = 400 / 9;
+            plinkoMultipliers.forEach((m, i) => {
+                pCtx.fillStyle = m === 0 ? "#1f232c" : (m === 1 ? "#3b82f6" : (m === 3 ? "#f59e0b" : "#ef4444"));
+                pCtx.beginPath(); 
+                pCtx.roundRect(i * sw + 2, 450, sw - 4, 40, 8); 
+                pCtx.fill();
+                pCtx.fillStyle = "#fff"; 
+                pCtx.font = "bold 14px Inter"; 
+                pCtx.textAlign = "center"; 
+                pCtx.fillText(m + "x", i * sw + sw/2, 475);
+            });
+            
+            // Шарик, если он есть
+            if(ballPos) { 
+                pCtx.fillStyle = "#fff"; 
+                pCtx.shadowBlur = 15; 
+                pCtx.shadowColor = "#fff"; 
+                pCtx.beginPath(); 
+                pCtx.arc(ballPos.x, ballPos.y, 8, 0, Math.PI * 2);
+                pCtx.fill(); 
+                pCtx.shadowBlur = 0; 
+            }
+        }
+
+        function playPlinko() {
+            if (selectedInvIdx === -1) {
+                alert("Выберите подарок!");
+                return;
+            }
+            if (isSpinning) return;
+            if (selectedInvIdx < 0 || selectedInvIdx >= inventory.length) {
+                alert("Ошибка выбора предмета!");
+                return;
+            }
+            
+            const item = inventory[selectedInvIdx];
+            isSpinning = true;
+            document.getElementById('plinko-play-btn').disabled = true;
+
+            // Начальные параметры шарика
+            let x = pipeX;
+            let y = 25;
+            let vx = (Math.random() - 0.5) * 1.2;
+            let vy = 0;
+            
+            const gravity = 0.08;
+            const bounce = 0.4;
+            const friction = 0.99;
+            const minBounceVelocity = 0.3;
+            
+            let lastFrameTime = performance.now();
+            let lastCollisionTime = 0;
+            
+            function animate(currentTime) {
+                const deltaTime = Math.min((currentTime - lastFrameTime) / 16, 2);
+                lastFrameTime = currentTime;
+                
+                vy += gravity * deltaTime;
+                y += vy * deltaTime;
+                x += vx * deltaTime;
+                
+                vx *= friction;
+                vy *= friction;
+                
+                // Коллизии с штифтами
+                for (let r = 0; r < 8; r++) {
+                    let rowPegs = r + 2;
+                    for (let i = 0; i < rowPegs; i++) {
+                        let px = 200 + (i - (rowPegs - 1) / 2) * 40;
+                        let py = 80 + r * 45;
+                        let dx = x - px;
+                        let dy = y - py;
+                        let distance = Math.sqrt(dx*dx + dy*dy);
+                        
+                        if (distance < 13 && (currentTime - lastCollisionTime) > 50) {
+                            lastCollisionTime = currentTime;
+                            
+                            let angle = Math.atan2(dy, dx);
+                            let pushDistance = 13 - distance;
+                            x += Math.cos(angle) * pushDistance;
+                            y += Math.sin(angle) * pushDistance;
+                            
+                            let normalX = dx / distance;
+                            let normalY = dy / distance;
+                            let dotProduct = vx * normalX + vy * normalY;
+                            
+                            if (Math.abs(dotProduct) > minBounceVelocity) {
+                                vx = (vx - 2 * dotProduct * normalX) * bounce;
+                                vy = (vy - 2 * dotProduct * normalY) * bounce;
+                            }
+                            
+                            vx += (Math.random() - 0.5) * 0.15;
+                        }
+                    }
+                }
+                
+                // Коллизии со стенами
+                if (x < 10) { 
+                    x = 10; 
+                    vx = Math.abs(vx) * bounce; 
+                }
+                if (x > 390) { 
+                    x = 390; 
+                    vx = -Math.abs(vx) * bounce; 
+                }
+                
+                drawPlinkoStatic({x, y});
+                
+                if (y < 440) {
+                    currentBallAnimation = requestAnimationFrame(animate);
+                } else {
+                    const slot = Math.max(0, Math.min(8, Math.floor(x / (400/9))));
+                    finishPlinko(plinkoMultipliers[slot], item, selectedInvIdx);
+                }
+            }
+            
+            currentBallAnimation = requestAnimationFrame(animate);
+        }
+
+        function finishPlinko(mult, item, idx) {
+            isSpinning = false; 
+            document.getElementById('plinko-play-btn').disabled = false;
+            
+            let winData = { isPlinko: true };
+            
+            if(mult === 0) { 
+                inventory.splice(idx, 1); 
+                winData.name = "УТЕРЯНО"; 
+                winData.icon = "💀"; 
+                winData.desc = "Предмет исчез (0x)"; 
+                winData.price = 0; 
+            }
+            else if(mult === 1) { 
+                winData.name = "ВОЗВРАТ"; 
+                winData.icon = "📦"; 
+                winData.desc = "Предмет возвращен (1x)"; 
+                winData.price = 0; 
+            }
+            else { 
+                let prize = item.price * mult; 
+                balance += prize; 
+                updateBalanceUI(); 
+                inventory.splice(idx, 1);
+                winData.name = "ВЫИГРЫШ!"; 
+                winData.icon = "💰"; 
+                winData.desc = `Получено ${prize} TON (${mult}x)`; 
+                winData.price = prize; 
+            }
+            
+            pendingWins = [winData]; 
+            showWinModal('plinko');
+            renderPlinkoInventory();
+            saveGameState();
+        }
+
+        // =========== СИСТЕМА УРОВНЕЙ ===========
+        function updateLevel() {
+            let xpForNextLevel = playerLevel < 10 ? 350 : 600;
+            
+            if (playerXP >= xpForNextLevel) {
+                playerLevel++;
+                playerXP -= xpForNextLevel;
+                
+                balance += playerLevel * 5;
+                updateBalanceUI();
+                
+                if (playerLevel <= 15) {
+                    alert(`🎉 Поздравляем! Вы достигли ${playerLevel} уровня! +${playerLevel * 5} TON в подарок!`);
+                }
+                
+                // Рекурсивно проверяем, не перешел ли игрок сразу несколько уровней
+                updateLevel();
+            }
+            saveGameState();
+        }
+        
+        function updateLevelDisplay() {
+            document.getElementById('current-level').textContent = playerLevel;
+            document.getElementById('current-xp').textContent = playerXP;
+            
+            let xpForNextLevel = playerLevel < 10 ? 350 : 600;
+            let nextLevel = playerLevel + 1;
+            let xpRemaining = Math.max(0, xpForNextLevel - playerXP);
+            
+            document.getElementById('required-xp').textContent = xpForNextLevel;
+            document.getElementById('next-level').textContent = nextLevel;
+            document.getElementById('xp-remaining').textContent = xpRemaining;
+            
+            let progressPercent = (playerXP / xpForNextLevel) * 100;
+            document.getElementById('level-progress-fill').style.width = `${Math.min(100, progressPercent)}%`;
+        }
+
+        // =========== НАСТРОЙКИ ПРОФИЛЯ ===========
+        function openSettings() {
+            document.getElementById('settings-modal').style.display = 'flex';
+        }
+        
+        function closeSettings() {
+            document.getElementById('settings-modal').style.display = 'none';
+        }
+        
+        function selectColor(color, element) {
+            profileColor = color;
+            
+            document.querySelectorAll('.color-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            element.classList.add('selected');
+            
+            applyProfileSettings();
+            saveGameState();
+        }
+        
+        function selectEffect(effect, element) {
+            profileEffect = effect;
+            
+            document.querySelectorAll('.effect-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            element.classList.add('selected');
+            
+            applyProfileSettings();
+            saveGameState();
+        }
+        
+        function resetAccount() {
+            if (confirm("Вы уверены? Это сбросит весь ваш прогресс, баланс и инвентарь!")) {
+                balance = 150.00;
+                inventory = [];
+                playerXP = 50;
+                playerLevel = 1;
+                casesOpened = 0;
+                profileColor = '#16191f';
+                profileEffect = 'none';
+                
+                updateBalanceUI();
+                renderInventory();
+                updateLevelDisplay();
+                applyProfileSettings();
+                
+                // Сбрасываем выделение в настройках
+                document.querySelectorAll('.color-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                document.querySelectorAll('.color-option')[0].classList.add('selected');
+                
+                document.querySelectorAll('.effect-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                document.querySelectorAll('.effect-option')[0].classList.add('selected');
+                
+                localStorage.removeItem('huntCaseGameState');
+                
+                alert("Аккаунт сброшен! Начинаем заново!");
+                closeSettings();
+            }
+        }
+        
+        function openHelp() {
+            document.getElementById('help-modal').style.display = 'flex';
+        }
+        
+        function closeHelp() {
+            document.getElementById('help-modal').style.display = 'none';
+        }
+
+        function applyPromo() {
+            const field = document.getElementById('promo-field');
+            const promoCode = field.value.toUpperCase().trim();
+            
+            if(promoCode === 'HUNT100') { 
+                balance += 100; 
+                updateBalanceUI(); 
+                alert('Промокод принят! +100 TON'); 
+                field.value = ''; 
+                saveGameState();
+            } else if(promoCode === 'XP100') {
+                playerXP += 100;
+                updateLevel();
+                updateLevelDisplay();
+                alert('+100 XP получено!');
+                field.value = '';
+                saveGameState();
+            } else if(promoCode === 'START') {
+                balance += 50;
+                playerXP += 50;
+                updateLevel();
+                updateLevelDisplay();
+                updateBalanceUI();
+                alert('Стартовый бонус! +50 TON и +50 XP');
+                field.value = '';
+                saveGameState();
+            } else if(promoCode) {
+                alert('Неверный промокод');
+            }
+        }
+
+        // =========== ЗАГРУЗКА ПРИЛОЖЕНИЯ ===========
+        document.addEventListener('DOMContentLoaded', function() {
+            const loadingStatus = document.getElementById('loading-status');
+            loadingStatus.textContent = 'Запуск приложения...';
+            
+            // Начинаем инициализацию Telegram
+            initTelegramUser();
+            
+            // Защита от зависания: через 3 секунды принудительно показываем приложение
+            setTimeout(() => {
+                const loadingScreen = document.getElementById('loading-screen');
+                if (loadingScreen.style.display !== 'none') {
+                    console.log('Принудительная загрузка из-за таймаута');
+                    loadingStatus.textContent = 'Таймаут, загружаем приложение...';
+                    initAppAfterTelegram();
+                }
+            }, 3000);
+        });
+    </script>
+</body>
+</html> 
