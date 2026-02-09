@@ -2072,42 +2072,38 @@
         let tg = null;
         
         function initTelegramUser() {
-            const loadingStatus = document.getElementById('loading-status');
-            
             if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp) {
-                tg = window.Telegram.WebApp;
-                
                 try {
+                    tg = window.Telegram.WebApp;
+                    
+                    // Инициализируем WebApp
                     tg.ready();
                     tg.expand();
                     
-                    const user = tg.initDataUnsafe?.user;
+                    // Получаем данные пользователя безопасно
+                    const user = tg.initDataUnsafe ? tg.initDataUnsafe.user : null;
                     if (user) {
                         username = user.username ? '@' + user.username : (user.first_name || 'Игрок');
-                        document.getElementById('user-name').textContent = username;
                         
                         if (user.photo_url) {
                             userAvatar = user.photo_url;
-                            document.getElementById('user-avatar').src = userAvatar;
-                        } else {
-                            const userId = user.id || Date.now().toString();
-                            userAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`;
-                            document.getElementById('user-avatar').src = userAvatar;
+                        } else if (user.id) {
+                            userAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`;
                         }
                         
+                        // Сохраняем в localStorage
                         localStorage.setItem('telegramUser', JSON.stringify({
                             username: username,
                             userId: user.id,
                             photoUrl: user.photo_url
                         }));
-                    } else {
-                        loadUserFromStorage();
                     }
                 } catch (error) {
-                    console.error('Ошибка Telegram:', error);
+                    console.log('Ошибка Telegram:', error);
                     loadUserFromStorage();
                 }
             } else {
+                console.log('Telegram WebApp не обнаружен, используем сохраненные данные');
                 loadUserFromStorage();
             }
         }
@@ -2118,17 +2114,14 @@
                 try {
                     const userData = JSON.parse(savedUser);
                     username = userData.username || '@Игрок';
-                    document.getElementById('user-name').textContent = username;
                     
                     if (userData.photoUrl) {
                         userAvatar = userData.photoUrl;
-                        document.getElementById('user-avatar').src = userAvatar;
                     } else if (userData.userId) {
                         userAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.userId}`;
-                        document.getElementById('user-avatar').src = userAvatar;
                     }
                 } catch (e) {
-                    console.error('Ошибка загрузки пользователя:', e);
+                    console.log('Ошибка загрузки пользователя:', e);
                 }
             }
         }
@@ -2182,12 +2175,6 @@
             const loadingStatus = document.getElementById('loading-status');
             let progress = 0;
             
-            // Создаем частицы
-            for (let i = 0; i < 15; i++) {
-                createParticle();
-            }
-            
-            // Анимация загрузки на 3 секунды
             const interval = setInterval(() => {
                 progress += 1;
                 loadingBar.style.width = `${progress}%`;
@@ -2206,21 +2193,7 @@
                     clearInterval(interval);
                     initAppAfterTelegram();
                 }
-            }, 30); // 3 секунды на загрузку
-        }
-        
-        function createParticle() {
-            const particle = document.createElement('div');
-            particle.className = 'loading-particle';
-            particle.style.left = `${Math.random() * 100}%`;
-            particle.style.top = `${Math.random() * 100}%`;
-            particle.style.animationDelay = `${Math.random() * 2}s`;
-            document.getElementById('loading-screen').appendChild(particle);
-            
-            setTimeout(() => {
-                particle.remove();
-                createParticle();
-            }, 3000);
+            }, 30);
         }
 
         // =========== ПРИМЕНЕНИЕ НАСТРОЕК ПРОФИЛЯ ===========
@@ -2292,9 +2265,6 @@
                     profileHeader.style.border = '3px solid #f59e0b';
                     break;
             }
-            
-            // Показываем VIP бейдж
-            document.getElementById('vip-badge').style.display = isVip ? 'inline-block' : 'none';
         }
 
         // =========== ТУРНИРНАЯ СИСТЕМА ===========
@@ -2332,7 +2302,6 @@
             
             saveTournamentState();
             startTournamentTimer();
-            updateTournamentDisplay();
         }
 
         function endTournament() {
@@ -2354,9 +2323,6 @@
                 saveGameState();
                 saveTournamentState();
             }
-            
-            // Обновляем отображение
-            updateTournamentDisplay();
             
             // Автоматически начинаем новый турнир через 10 секунд
             setTimeout(() => {
@@ -2424,6 +2390,10 @@
         function initAppAfterTelegram() {
             // Загружаем сохраненное состояние
             loadGameState();
+            
+            // Обновляем UI пользователя
+            document.getElementById('user-name').textContent = username;
+            document.getElementById('user-avatar').src = userAvatar;
             
             // Инициализируем турнир
             initTournament();
@@ -3599,66 +3569,50 @@
         function generateLeaderboardData() {
             leaderboardData = [];
             
-            // Загружаем сохраненных пользователей
-            const savedUsers = JSON.parse(localStorage.getItem('leaderboardUsers') || '[]');
-            
-            // Добавляем реальных пользователей из localStorage
-            savedUsers.forEach(user => {
-                if (user.username && user.balance) {
-                    leaderboardData.push({
-                        username: user.username,
-                        balance: user.balance,
-                        avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`,
-                        isCurrentUser: user.username === username
-                    });
-                }
+            // Добавляем текущего пользователя
+            leaderboardData.push({
+                username: username,
+                balance: balance,
+                avatar: userAvatar,
+                isCurrentUser: true
             });
             
-            // Добавляем текущего пользователя, если его еще нет
-            const currentUserExists = leaderboardData.some(player => player.username === username);
-            if (!currentUserExists) {
+            // Добавляем тестовых пользователей
+            const testUsers = [
+                { username: "@pro_gamer", balance: 12500, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=pro" },
+                { username: "@crypto_king", balance: 8900, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=king" },
+                { username: "@lucky_winner", balance: 7500, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=lucky" },
+                { username: "@ton_master", balance: 6200, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=master" },
+                { username: "@case_hunter", balance: 5400, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=hunter" },
+                { username: "@vip_player", balance: 4800, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=vip" },
+                { username: "@plinko_pro", balance: 4100, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=plinko" },
+                { username: "@crash_expert", balance: 3700, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=crash" },
+                { username: "@newbie", balance: 2200, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=newbie" }
+            ];
+            
+            testUsers.forEach(user => {
                 leaderboardData.push({
-                    username: username,
-                    balance: balance,
-                    avatar: userAvatar,
-                    isCurrentUser: true
+                    username: user.username,
+                    balance: user.balance,
+                    avatar: user.avatar,
+                    isCurrentUser: false
                 });
-            }
+            });
             
             // Сортируем по балансу (по убыванию)
             leaderboardData.sort((a, b) => b.balance - a.balance);
-            
-            // Сохраняем обновленные данные
-            saveLeaderboardData();
             
             // Находим позицию текущего пользователя
             userPosition = leaderboardData.findIndex(player => player.username === username) + 1;
         }
         
-        function saveLeaderboardData() {
-            const usersToSave = leaderboardData.map(player => ({
-                username: player.username,
-                balance: player.balance,
-                avatar: player.avatar
-            }));
-            localStorage.setItem('leaderboardUsers', JSON.stringify(usersToSave));
-        }
-        
         function updateLeaderboardData() {
-            // Обновляем данные текущего пользователя в лидерборде
+            // Обновляем данные текущего пользователя
             const userIndex = leaderboardData.findIndex(player => player.username === username);
             
             if (userIndex !== -1) {
                 leaderboardData[userIndex].balance = balance;
                 leaderboardData[userIndex].avatar = userAvatar;
-            } else {
-                // Добавляем нового пользователя
-                leaderboardData.push({
-                    username: username,
-                    balance: balance,
-                    avatar: userAvatar,
-                    isCurrentUser: true
-                });
             }
             
             // Сортируем по балансу
@@ -3666,9 +3620,6 @@
             
             // Обновляем позицию
             userPosition = leaderboardData.findIndex(player => player.username === username) + 1;
-            
-            // Сохраняем
-            saveLeaderboardData();
         }
         
         function updateLeaderboardDisplay() {
@@ -3691,7 +3642,7 @@
                 return;
             }
             
-            // Отображаем всех реальных игроков
+            // Отображаем всех игроков
             leaderboardData.forEach((player, i) => {
                 const item = document.createElement('div');
                 item.className = 'leaderboard-item';
@@ -3735,7 +3686,10 @@
 
         // =========== ЗАГРУЗКА ПРИЛОЖЕНИЯ ===========
         document.addEventListener('DOMContentLoaded', function() {
+            // Инициализируем Telegram пользователя
             initTelegramUser();
+            
+            // Запускаем загрузку
             setTimeout(() => {
                 initLoadingScreen();
             }, 300);
